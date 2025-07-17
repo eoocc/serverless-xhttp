@@ -1,7 +1,10 @@
 {
-  "name": "nodeJS",
+  "name": "node-server",
   "version": "1.0.0",
-  "description": "nodejs"
+  "description": "nodejs",
+  "author": "",
+  "repository": "",
+  "license": "MIT",
   "private": false,
   "main": "app.js",
   "scripts": {
