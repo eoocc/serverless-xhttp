@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的导航页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('http://files.unn.pp.ua/download/pictures%2Fbackground.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .link-item {
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+        }
+        
+        .link-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .link-item a {
+            text-decoration: none;
+            color: #333;
+            display: block;
+            height: 100%;
+            width: 100%;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <h1>G</h1>
+    
+    <div class="container">
+        <div class="link-item">
+            <a href="https://www.google.com" target="_blank">Google</a>
+        </div>
+        <div class="link-item">
+            <a href="https://www.baidu.com" target="_blank">www.baidu.com</a>
+        </div>
+        <div class="link-item">
+            <a href="https://www.youtube.com" target="_blank">www.youtube.com</a>
+        </div>
+        <div class="link-item">
+            <a href="https://mail.google.com" target="_blank">mail.google.com</a>
+        </div>
+        <div class="link-item">
+            <a href="https://github.com" target="_blank">GitHub</a>
+        </div>
+        <div class="link-item">
+            <a href="https://ip.sb" target="_blank">ip.sb</a>
+        </div>
+        <div class="link-item">
+            <a href="https://dash.cloudflare.com" target="_blank">cloudflare</a>
+        </div>
+        <div class="link-item">
+            <a href="https://chat.openai.com" target="_blank">ChatGPT</a>
+        </div>
+        <div class="link-item">
+            <a href="https://huggingface.co" target="_blank">huggingface.co</a>
+        </div>
+        <div class="link-item">
+            <a href="https://www.itdog.cn" target="_blank">ITDOG-在线ping</a>
+        </div>
+        <div class="link-item">
+            <a href="https://www.ipip.net" target="_blank">IP-Data</a>
+        </div>
+        <div class="link-item">
+            <a href="#" target="_blank">抽校</a>
+        </div>
+        <div class="link-item">
+            <a href="#" target="_blank">ecoc@5 dashboard</a>
+        </div>
+        <div class="link-item">
+            <a href="https://discord.com" target="_blank">Discord.</a>
+        </div>
+        <div class="link-item">
+            <a href="https://who.cx" target="_blank">域名可用性查询</a>
+        </div>
+        <div class="link-item">
+            <a href="https://www.domcomp.com" target="_blank">域名比价</a>
+        </div>
+        <div class="link-item">
+            <a href="https://www.nodeseek.com" target="_blank">NodeSeek</a>
+        </div>
+        <div class="link-item">
+            <a href="https://linux.do" target="_blank">Linux do</a>
+        </div>
+    </div>
+</body>
+</html>
