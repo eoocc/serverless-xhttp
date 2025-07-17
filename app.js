@@ -7,16 +7,16 @@ const { Buffer } = require('buffer');
 const { exec, execSync } = require('child_process');
 
 // 环境变量
-const UUID = process.env.UUID || 'a2056d0d-c98e-4aeb-9aab-37f64edd5710'; // 使用哪吒v1，在不同的平台部署需修改UUID，否则会覆盖
-const NEZHA_SERVER = process.env.NEZHA_SERVER || '';       // 哪吒v1填写形式：nz.abc.com:8008   哪吒v0填写形式：nz.abc.com
-const NEZHA_PORT = process.env.NEZHA_PORT || '';           // 哪吒v1没有此变量，v0的agent端口为{443,8443,2096,2087,2083,2053}其中之一时开启tls
-const NEZHA_KEY = process.env.NEZHA_KEY || '';             // v1的NZ_CLIENT_SECRET或v0的agent端口  
-const AUTO_ACCESS = process.env.AUTO_ACCESS || false;      // 是否开启自动访问保活,false为关闭,true为开启,需同时填写DOMAIN变量
-const XPATH = process.env.XPATH || UUID.slice(0, 8);       // xhttp路径,自动获取uuid前8位
-const SUB_PATH = process.env.SUB_PATH || 'sub';            // 节点订阅路径
-const DOMAIN = process.env.DOMAIN || '';                   // 域名或ip,留空将自动获取服务器ip
-const NAME = process.env.NAME || 'Vls';                    // 节点名称
-const PORT = process.env.PORT || 3000;                     // http服务
+const UUID = process.env.UUID || 'a2056d0d-c98e-4aeb-9aab-37f64edd5710'; 
+const NEZHA_SERVER = process.env.NEZHA_SERVER || '';       
+const NEZHA_PORT = process.env.NEZHA_PORT || '';           
+const NEZHA_KEY = process.env.NEZHA_KEY || '';               
+const AUTO_ACCESS = process.env.AUTO_ACCESS || false;      
+const XPATH = process.env.XPATH || UUID.slice(0, 8);       
+const SUB_PATH = process.env.SUB_PATH || 'sub';           
+const DOMAIN = process.env.DOMAIN || '';                   
+const NAME = process.env.NAME || 'Hug';                    
+const PORT = process.env.PORT || 3000;                     
 
 // 核心配置
 const SETTINGS = {
@@ -803,10 +803,19 @@ const server = http.createServer((req, res) => {
 
     // 根路径和订阅路径
     if (req.url === '/') {
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('Hello, World\n');
+        const filePath = path.join(__dirname, 'index.html');
+        fs.readFile(filePath, 'utf8', (err, content) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end('Internal Server Error');
+                return;
+            }
+            
+            res.writeHead(200, { 'Content-Type': 'text/html' });
+            res.end(content);
+        });
         return;
-    } 
+    }
     
     if (req.url === `/${SUB_PATH}`) {
         const vlessURL = `vless://${UUID}@${IP}:443?encryption=none&security=tls&sni=${IP}&fp=chrome&allowInsecure=1&type=xhttp&host=${IP}&path=${SETTINGS.XPATH}&mode=packet-up#${NAME}-${ISP}`; 
@@ -816,7 +825,6 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // VLESS 请求处理
     const pathMatch = req.url.match(new RegExp(`${XPATH}/([^/]+)(?:/([0-9]+))?$`));
     if (!pathMatch) {
         res.writeHead(404);
@@ -950,11 +958,4 @@ server.listen(PORT, () => {
     }, 300000);
     addAccessTask();
     console.log(`Server is running on port ${PORT}`);
-    log('info', `=================================`);
-    log('info', `Log level: ${SETTINGS.LOG_LEVEL}`);
-    log('info', `Max buffered posts: ${SETTINGS.MAX_BUFFERED_POSTS}`);
-    log('info', `Max POST size: ${SETTINGS.MAX_POST_SIZE}KB`);
-    log('info', `Max buffer size: ${SETTINGS.BUFFER_SIZE}KB`)
-    log('info', `Session timeout: ${SETTINGS.CHUNK_SIZE}bytes`);
-    log('info', `=================================`);
 });
