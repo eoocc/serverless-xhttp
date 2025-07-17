@@ -3,6 +3,7 @@ const fs = require('fs');
 const net = require('net');
 const http = require('http');
 const axios = require('axios');
+const path = require('path');
 const { Buffer } = require('buffer');
 const { exec, execSync } = require('child_process');
 
