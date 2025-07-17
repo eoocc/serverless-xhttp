@@ -16,7 +16,7 @@ const XPATH = process.env.XPATH || UUID.slice(0, 8);
 const SUB_PATH = process.env.SUB_PATH || 'sub';           
 const DOMAIN = process.env.DOMAIN || '';                   
 const NAME = process.env.NAME || 'Hug';                    
-const PORT = process.env.PORT || 3000;                     
+const PORT = process.env.PORT || 7860;                     
 
 // 核心配置
 const SETTINGS = {
