@@ -7,7 +7,6 @@ const path = require('path');
 const { Buffer } = require('buffer');
 const { exec, execSync } = require('child_process');
 
-// 环境变量
 const UUID = process.env.UUID || 'a2056d0d-c98e-4aeb-9aab-37f64edd5710'; 
 const NEZHA_SERVER = process.env.NEZHA_SERVER || '';       
 const NEZHA_PORT = process.env.NEZHA_PORT || '';           
@@ -19,18 +18,17 @@ const DOMAIN = process.env.DOMAIN || '';
 const NAME = process.env.NAME || 'Hug';                    
 const PORT = process.env.PORT || 7860;                     
 
-// 核心配置
 const SETTINGS = {
     ['UUID']: UUID,              
-    ['LOG_LEVEL']: 'none',       // 日志级别,调试使用,none,info,warn,error
-    ['BUFFER_SIZE']: '2048',     // 增加缓冲区大小
-    ['XPATH']: `%2F${XPATH}`,    // xhttp路径 
-    ['MAX_BUFFERED_POSTS']: 30,  // 最大缓存POST请求数
-    ['MAX_POST_SIZE']: 1000000,  // 每个POST最大字节数(1MB)
-    ['SESSION_TIMEOUT']: 30000,  // 会话超时时间(30秒)
-    ['CHUNK_SIZE']: 1024 * 1024, // 1024KB 的数据块大小
-    ['TCP_NODELAY']: true,       // 启用 TCP_NODELAY
-    ['TCP_KEEPALIVE']: true,     // 启用 TCP keepalive
+    ['LOG_LEVEL']: 'none',     
+    ['BUFFER_SIZE']: '2048',     
+    ['XPATH']: `%2F${XPATH}`,    
+    ['MAX_BUFFERED_POSTS']: 30, 
+    ['MAX_POST_SIZE']: 1000000,  
+    ['SESSION_TIMEOUT']: 30000,  
+    ['CHUNK_SIZE']: 1024 * 1024,
+    ['TCP_NODELAY']: true,       
+    ['TCP_KEEPALIVE']: true,     
 }
 
 function validate_uuid(left, right) {
@@ -54,7 +52,6 @@ function concat_typed_arrays(first, ...args) {
     return r
 }
 
-// 扩展日志函数
 function log(type, ...args) {
     if (SETTINGS.LOG_LEVEL === 'none') return;
 
@@ -66,11 +63,11 @@ function log(type, ...args) {
     };
     
     const colors = {
-        'debug': '\x1b[36m', // 青色
-        'info': '\x1b[32m',  // 绿色
-        'warn': '\x1b[33m',  // 黄色
-        'error': '\x1b[31m', // 红色
-        'reset': '\x1b[0m'   // 重置
+        'debug': '\x1b[36m',
+        'info': '\x1b[32m', 
+        'warn': '\x1b[33m', 
+        'error': '\x1b[31m',
+        'reset': '\x1b[0m'   
     };
 
     const configLevel = levels[SETTINGS.LOG_LEVEL] || 1;
@@ -168,7 +165,7 @@ uuid: ${UUID}`;
       }
       command = `nohup ./npm -c config.yaml >/dev/null 2>&1 &`;
     } else {
-      // console.log('NEZHA variable is empty, skip running');
+      // console.log('NZ variable is empty, skip running');
       return;
     }
   
@@ -182,7 +179,6 @@ uuid: ${UUID}`;
     } 
 };
   
-// 添加自动任务
 async function addAccessTask() {
     if (AUTO_ACCESS !== true) return;
     try {
@@ -201,7 +197,6 @@ async function addAccessTask() {
     }
 }
 
-// VLESS 协议解析
 function parse_uuid(uuid) {
     uuid = uuid.replaceAll('-', '')
     const r = []
@@ -298,7 +293,6 @@ async function read_vless_header(reader, cfg_uuid_str) {
     }
 }
 
-// read_atleast 函数
 async function read_atleast(reader, n) {
     const buffs = []
     let done = false
@@ -320,17 +314,16 @@ async function read_atleast(reader, n) {
     }
 }
 
-// parse_header 函数
 async function parse_header(uuid_str, client) {
     log('debug', 'Starting to parse VLESS header');
     const reader = client.readable.getReader()
     try {
         const vless = await read_vless_header(reader, uuid_str)
-        log('debug', 'VLESS header parsed successfully');
+        log('debug', 'VLS header parsed successfully');
         return vless
     } catch (err) {
-        log('error', `VLESS header parse error: ${err.message}`);
-        throw new Error(`read vless header error: ${err.message}`)
+        log('error', `VLS header parse error: ${err.message}`);
+        throw new Error(`read vls header error: ${err.message}`)
     } finally {
         reader.releaseLock()
     }
@@ -375,14 +368,13 @@ function timed_connect(hostname, port, ms) {
     })
 }
 
-// 网络传输
 function pipe_relay() {
     async function pump(src, dest, first_packet) {
         const chunkSize = parseInt(SETTINGS.CHUNK_SIZE);
         
         if (first_packet.length > 0) {
             if (dest.write) {
-                dest.cork(); // 合并多个小数据包
+                dest.cork();
                 dest.write(first_packet);
                 process.nextTick(() => dest.uncork());
             } else {
@@ -397,7 +389,6 @@ function pipe_relay() {
         
         try {
             if (src.pipe) {
-                // 优化 Node.js Stream
                 src.pause();
                 src.pipe(dest, {
                     end: true,
@@ -405,7 +396,6 @@ function pipe_relay() {
                 });
                 src.resume();
             } else {
-                // 优化 Web Stream
                 await src.readable.pipeTo(dest.writable, {
                     preventClose: false,
                     preventAbort: false,
@@ -423,7 +413,6 @@ function pipe_relay() {
     return pump;
 }
 
-// socketToWebStream 函数
 function socketToWebStream(socket) {
     let readController;
     let writeController;
@@ -485,7 +474,6 @@ function socketToWebStream(socket) {
     };
 }
 
-// relay 函数
 function relay(cfg, client, remote, vless) {
     const pump = pipe_relay();
     let isClosing = false;
@@ -498,7 +486,6 @@ function relay(cfg, client, remote, vless) {
             try {
                 remote.destroy();
             } catch (err) {
-                // 忽略常规断开错误
                 if (!err.message.includes('aborted') && 
                     !err.message.includes('socket hang up')) {
                     log('error', `Cleanup error: ${err.message}`);
@@ -509,7 +496,6 @@ function relay(cfg, client, remote, vless) {
 
     const uploader = pump(client, remoteStream, vless.data)
         .catch(err => {
-            // 只记录非预期错误
             if (!err.message.includes('aborted') && 
                 !err.message.includes('socket hang up')) {
                 log('error', `Upload error: ${err.message}`);
@@ -521,7 +507,6 @@ function relay(cfg, client, remote, vless) {
 
     const downloader = pump(remoteStream, client, vless.resp)
         .catch(err => {
-            // 只记录非预期错误
             if (!err.message.includes('aborted') && 
                 !err.message.includes('socket hang up')) {
                 log('error', `Download error: ${err.message}`);
@@ -533,7 +518,6 @@ function relay(cfg, client, remote, vless) {
         .finally(cleanup);
 }
 
-// 会话管理
 const sessions = new Map();
 
 class Session {
@@ -549,9 +533,9 @@ class Session {
         this.headerSent = false;
         this.bufferedData = new Map();
         this.cleaned = false;
-        this.pendingPackets = [];  // 存储待处理的数据包
-        this.currentStreamRes = null; // 当前下行流响应
-        this.pendingBuffers = new Map(); // 存储未按序到达的数据包
+        this.pendingPackets = [];  
+        this.currentStreamRes = null; 
+        this.pendingBuffers = new Map(); 
         log('debug', `Created new session with UUID: ${uuid}`);
     }
 
@@ -559,8 +543,7 @@ class Session {
         if (this.initialized) return true;
         
         try {
-            log('debug', 'Initializing VLESS connection from first packet');
-            // 创建可读流来解析VLESS头
+            log('debug', 'Initializing VLS connection from first packet');
             const readable = new ReadableStream({
                 start(controller) {
                     controller.enqueue(firstPacket);
@@ -574,47 +557,39 @@ class Session {
             };
             
             this.vlessHeader = await parse_header(SETTINGS.UUID, client);
-            log('info', `VLESS header parsed: ${this.vlessHeader.hostname}:${this.vlessHeader.port}`);
+            log('info', `VLS header parsed: ${this.vlessHeader.hostname}:${this.vlessHeader.port}`);
             
-            // 建立远程连接
             this.remote = await connect_remote(this.vlessHeader.hostname, this.vlessHeader.port);
             log('info', 'Remote connection established');
             
             this.initialized = true;
             return true;
         } catch (err) {
-            log('error', `Failed to initialize VLESS: ${err.message}`);
+            log('error', `Failed to initialize VLs: ${err.message}`);
             return false;
         }
     }
 
     async processPacket(seq, data) {
         try {
-            // 保存数据到pendingBuffers
             this.pendingBuffers.set(seq, data);
             log('debug', `Buffered packet seq=${seq}, size=${data.length}`);
             
-            // 按序处理数据包
             while (this.pendingBuffers.has(this.nextSeq)) {
                 const nextData = this.pendingBuffers.get(this.nextSeq);
                 this.pendingBuffers.delete(this.nextSeq);
                 
-                // 只有第一个包需要初始化VLESS
                 if (!this.initialized && this.nextSeq === 0) {
                     if (!await this.initializeVLESS(nextData)) {
                         throw new Error('Failed to initialize VLESS connection');
                     }
-                    // 存储响应头
                     this.responseHeader = Buffer.from(this.vlessHeader.resp);
-                    // 写入VLESS头部数据到远程
                     await this._writeToRemote(this.vlessHeader.data);
                     
-                    // 如果有待处理的下游连接，立即发送响应
                     if (this.currentStreamRes) {
                         this._startDownstreamResponse();
                     }
                 } else {
-                    // 后续数据包直接发送
                     if (!this.initialized) {
                         log('warn', `Received out of order packet seq=${seq} before initialization`);
                         continue;
@@ -626,7 +601,6 @@ class Session {
                 log('debug', `Processed packet seq=${this.nextSeq-1}`);
             }
 
-            // 检查缓存大小
             if (this.pendingBuffers.size > SETTINGS.MAX_BUFFERED_POSTS) {
                 throw new Error('Too many buffered packets');
             }
@@ -646,17 +620,14 @@ class Session {
             const isH2 = protocol === 'h2';
 
             if (!this.headerSent) {
-                log('debug', `Sending VLESS response header (${protocol}): ${this.responseHeader.length} bytes`);
+                log('debug', `Sending response header (${protocol}): ${this.responseHeader.length} bytes`);
                 this.currentStreamRes.write(this.responseHeader);
                 this.headerSent = true;
             }
             
-            // 根据协议使用不同的传输策略
             if (isH2) {
-                // HTTP/2 优化
                 this.currentStreamRes.socket.setNoDelay(true);
                 
-                // 使用 Transform 流进行数据分块
                 const transform = new require('stream').Transform({
                     transform(chunk, encoding, callback) {
                         const size = 16384; // 16KB chunks
@@ -669,11 +640,9 @@ class Session {
                 
                 this.remote.pipe(transform).pipe(this.currentStreamRes);
             } else {
-                // HTTP/1.1 直接传输
                 this.remote.pipe(this.currentStreamRes);
             }
             
-            // 处理关闭事件
             this.remote.on('end', () => {
                 if (!this.currentStreamRes.writableEnded) {
                     this.currentStreamRes.end();
@@ -771,7 +740,6 @@ class Session {
     }
 } 
 
-// 获取ISP信息
 const metaInfo = execSync(
     'curl -s https://speed.cloudflare.com/meta | awk -F\\" \'{print $26"-"$18}\' | sed -e \'s/ /_/g\'',
     { encoding: 'utf-8' }
@@ -780,7 +748,6 @@ const ISP = metaInfo.trim();
 let IP = DOMAIN;
 if (!DOMAIN) {
     try {
-        // 首先尝试获取 IPv4
         IP = execSync('curl -s --max-time 2 ipv4.ip.sb', { encoding: 'utf-8' }).trim();
     } catch (err) {
         try {
@@ -792,7 +759,6 @@ if (!DOMAIN) {
     }
 }
 
-// 创建http服务
 const server = http.createServer((req, res) => {
     const headers = {
         'Access-Control-Allow-Origin': '*',
@@ -802,7 +768,6 @@ const server = http.createServer((req, res) => {
         'X-Padding': generatePadding(100, 1000),
     };
 
-    // 根路径和订阅路径
     if (req.url === '/') {
         const filePath = path.join(__dirname, 'index.html');
         fs.readFile(filePath, 'utf8', (err, content) => {
@@ -861,7 +826,6 @@ const server = http.createServer((req, res) => {
         return;
     }
     
-    // 处理上行流
     if (req.method === 'POST' && seq !== null) {
         let session = sessions.get(uuid);
         if (!session) {
@@ -881,7 +845,7 @@ const server = http.createServer((req, res) => {
 
         let data = [];
         let size = 0;
-        let headersSent = false;  // 添加标志位
+        let headersSent = false; 
         
         req.on('data', chunk => {
             size += chunk.length;
@@ -897,7 +861,7 @@ const server = http.createServer((req, res) => {
         });
 
         req.on('end', async () => {
-            if (headersSent) return;  // 如果已经发送过响应头就直接返回
+            if (headersSent) return; 
             
             try {
                 const buffer = Buffer.concat(data);
@@ -930,12 +894,10 @@ const server = http.createServer((req, res) => {
     res.end();
 });
 
-// 启用 HTTP/2 和 HTTP/1.1 监听
 server.on('secureConnection', (socket) => {
     log('debug', `New secure connection using: ${socket.alpnProtocol || 'http/1.1'}`);
 });
 
-// 工具函数
 function generatePadding(min, max) {
     const length = min + Math.floor(Math.random() * (max - min));
     return Buffer.from(Array(length).fill('X').join('')).toString('base64');
@@ -956,7 +918,7 @@ server.listen(PORT, () => {
     runnz ();
     setTimeout(() => {
       delFiles();
-    }, 300000);
+    }, 30000);
     addAccessTask();
     console.log(`Server is running on port ${PORT}`);
 });
