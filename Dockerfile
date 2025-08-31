@@ -1,13 +1,28 @@
-FROM node:20-alpine3.20
+FROM golang:1.22-alpine AS builder
 
-WORKDIR /tmp
+WORKDIR /app
 
-COPY app.js index.html package.json ./
+RUN apk add --no-cache git ca-certificates tzdata
 
-EXPOSE 7860/tcp
+COPY go.mod go.sum ./
 
-RUN apk add --no-cache curl bash && \
-    npm install && \
-    chmod +x app.js
+RUN go mod download
 
-CMD ["npm", "start"]
+COPY main.go .
+
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app main.go
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates curl bash \
+    && rm -rf /var/cache/apk/*
+
+WORKDIR /root/
+
+COPY --from=builder /app/app .
+
+RUN chmod +x app
+
+EXPOSE 3000
+
+CMD ["./app"]
