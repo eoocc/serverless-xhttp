@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -50,11 +51,8 @@ var (
 	sessions     = make(map[string]*VlessSession)
 	sessionsMu   sync.RWMutex
 	logger       *log.Logger
+	customDialer *net.Dialer
 )
-
-func init() {
-	logger = log.New(os.Stdout, "[Server] ", log.LstdFlags)
-}
 
 // load config
 func loadConfig() *Config {
@@ -63,8 +61,8 @@ func loadConfig() *Config {
 	nezhaPort := getEnv("NEZHA_PORT", "")        // 哪吒v1请留空,哪吒v0的agent端口
 	nezhaKey := getEnv("NEZHA_KEY", "")          // 哪吒v1的NZ_CLIENT_SECRET或哪吒v0的agent密钥
 	subPath := getEnv("SUB_PATH", "sub")         // 节点订阅token
-	name := getEnv("NAME", "Xhttp")              // 节点名称
-	port := getEnv("PORT", "3000")               // 监听端口
+	name := getEnv("NAME", "xhttp")              // 节点名称
+	port := getEnv("PORT", "7860")               // 监听端口
 	domain := getEnv("DOMAIN", "")               // 服务域名
 
 	xpath := getEnv("XPATH", uuid[:8])
@@ -86,6 +84,22 @@ func loadConfig() *Config {
 		ChunkSize:   32768,
 		AutoAccess:  autoAccess,
 		LogLevel:    getEnv("LOG_LEVEL", "none"), // 日志等级 none, info, debug, warn, error
+	}
+}
+
+func init() {
+	logger = log.New(os.Stdout, "[Server] ", log.LstdFlags)
+	
+	customResolver := &net.Resolver{
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			return net.Dial(network, "1.1.1.1:53")
+		},
+	}
+	
+	customDialer = &net.Dialer{
+		Resolver:    customResolver,
+		Timeout:     30 * time.Second, 
+		KeepAlive:   30 * time.Second, 
 	}
 }
 
@@ -299,17 +313,24 @@ func handleVlessConnection(w http.ResponseWriter, r *http.Request, uuid string) 
 		defer func() { done <- true }()
 		buffer := make([]byte, config.ChunkSize)
 		for {
+			remote.SetReadDeadline(time.Now().Add(300 * time.Second))
 			n, err := remote.Read(buffer)
 			if err != nil {
-				if err != io.EOF && !strings.Contains(err.Error(), "connection reset") {
-					logf("warn", "Remote connection error for %s", uuid)
+				if err != io.EOF && 
+				   !strings.Contains(err.Error(), "connection reset") &&
+				   !strings.Contains(err.Error(), "i/o timeout") &&
+				   !strings.Contains(err.Error(), "closed network connection") {
+					logf("debug", "Remote connection closed for %s: %v", uuid, err)
 				}
 				break
 			}
 			if n > 0 {
+				conn.SetWriteDeadline(time.Now().Add(60 * time.Second))
 				if _, err := conn.Write(buffer[:n]); err != nil {
-					if !strings.Contains(err.Error(), "connection reset") && !strings.Contains(err.Error(), "closed network connection") {
-						logf("warn", "Client write error for %s", uuid)
+					if !strings.Contains(err.Error(), "connection reset") && 
+					   !strings.Contains(err.Error(), "closed network connection") &&
+					   !strings.Contains(err.Error(), "broken pipe") {
+						logf("debug", "Client write error for %s: %v", uuid, err)
 					}
 					break
 				}
@@ -322,17 +343,25 @@ func handleVlessConnection(w http.ResponseWriter, r *http.Request, uuid string) 
 		defer func() { done <- true }()
 		buffer := make([]byte, config.ChunkSize)
 		for {
+			// 设置读取超时，防止阶塞
+			conn.SetReadDeadline(time.Now().Add(300 * time.Second))
 			n, err := conn.Read(buffer)
 			if err != nil {
-				if err != io.EOF && !strings.Contains(err.Error(), "connection reset") {
-					logf("warn", "Client connection error for %s", uuid)
+				if err != io.EOF && 
+				   !strings.Contains(err.Error(), "connection reset") &&
+				   !strings.Contains(err.Error(), "i/o timeout") &&
+				   !strings.Contains(err.Error(), "closed network connection") {
+					logf("debug", "Client connection closed for %s: %v", uuid, err)
 				}
 				break
 			}
 			if n > 0 {
+				remote.SetWriteDeadline(time.Now().Add(60 * time.Second))
 				if _, err := remote.Write(buffer[:n]); err != nil {
-					if !strings.Contains(err.Error(), "connection reset") && !strings.Contains(err.Error(), "closed network connection") {
-						logf("warn", "Remote write error for %s", uuid)
+					if !strings.Contains(err.Error(), "connection reset") && 
+					   !strings.Contains(err.Error(), "closed network connection") &&
+					   !strings.Contains(err.Error(), "broken pipe") {
+						logf("debug", "Remote write error for %s: %v", uuid, err)
 					}
 					break
 				}
@@ -388,13 +417,15 @@ func handleVlessPost(w http.ResponseWriter, r *http.Request, uuid string, seq in
 		var connErr error
 			
 		for i := 0; i < 3; i++ {
-			remote, connErr = net.DialTimeout("tcp", address, 15*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second) // 增加超时
+			remote, connErr = customDialer.DialContext(ctx, "tcp", address)
+			cancel()
 			if connErr == nil {
 				break
 			}
 			if i < 2 {
 				logf("warn", "Connection attempt %d failed for %s: %v, retrying...", i+1, address, connErr)
-				time.Sleep(1 * time.Second)
+				time.Sleep(2 * time.Second) 
 			}
 		}
 			
@@ -407,8 +438,16 @@ func handleVlessPost(w http.ResponseWriter, r *http.Request, uuid string, seq in
 		logf("info", "Successfully connected to %s", address)
 		
 		if tcpConn, ok := remote.(*net.TCPConn); ok {
-			tcpConn.SetNoDelay(true)
-			tcpConn.SetKeepAlive(true)
+			tcpConn.SetNoDelay(true)                 
+			tcpConn.SetKeepAlive(true)                  
+			tcpConn.SetKeepAlivePeriod(30 * time.Second) 
+
+			if err := tcpConn.SetReadBuffer(64 * 1024); err != nil {
+				logf("debug", "Failed to set read buffer: %v", err)
+			}
+			if err := tcpConn.SetWriteBuffer(64 * 1024); err != nil {
+				logf("debug", "Failed to set write buffer: %v", err)
+			}
 		}
 		
 		session.mu.Lock()
@@ -444,13 +483,17 @@ func handleVlessPost(w http.ResponseWriter, r *http.Request, uuid string, seq in
 
 // get ISP info from Cloudflare
 func getISPInfo() string {
+	// 使用自定义DNS解析器的HTTP客户端
 	client := &http.Client{
 		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			DialContext: customDialer.DialContext,
+		},
 	}
 	
 	resp, err := client.Get("https://speed.cloudflare.com/meta")
 	if err != nil {
-		logf("warn", "Failed to get ISP info from Cloudflare: %v", err)
+		logf("warn", "Failed to get ISP info from Cloudflare (using 1.1.1.1 DNS): %v", err)
 		return "Unknown_ISP"
 	}
 	defer resp.Body.Close()
@@ -473,7 +516,7 @@ func getISPInfo() string {
 	asOrg = strings.ReplaceAll(asOrg, ")", "")
 	
 	isp := fmt.Sprintf("%s_%s", country, asOrg)
-	logf("debug", "Got ISP info: %s (Country: %s, ASOrganization: %s)", isp, meta.Country, meta.AsOrganization)
+	logf("debug", "Got ISP info: %s (Country: %s, ASOrganization: %s) using Cloudflare DNS (1.1.1.1)", isp, meta.Country, meta.AsOrganization)
 	
 	return isp
 }
@@ -482,8 +525,15 @@ func getISPInfo() string {
 func handleRequest(w http.ResponseWriter, r *http.Request) {
 	// root path
 	if r.URL.Path == "/" {
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprint(w, "Hello, World\n")
+		htmlContent, err := os.ReadFile("index.html")
+		if err != nil {
+			logf("warn", "Failed to read index.html: %v", err)
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprint(w, "Hello, World\n")
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Write(htmlContent)
 		return
 	}
 	
@@ -563,15 +613,20 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 func diagnoseConnection(hostname string, port uint16) {
 	address := fmt.Sprintf("%s:%d", hostname, port)
 	
-	ips, err := net.LookupIP(hostname)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second) // 适度增加超时
+	defer cancel()
+	
+	ips, err := customDialer.Resolver.LookupIPAddr(ctx, hostname)
 	if err != nil {
-		logf("warn", "DNS resolution failed for %s: %v", hostname, err)
+		logf("warn", "DNS resolution failed for %s using Cloudflare DNS (1.1.1.1): %v", hostname, err)
 		return
 	}
 	
-	logf("debug", "DNS resolved %s to %v", hostname, ips)
+	logf("debug", "DNS resolved %s to %v using Cloudflare DNS (1.1.1.1)", hostname, ips)
 	
-	conn, err := net.DialTimeout("tcp", address, 5*time.Second)
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel2()
+	conn, err := customDialer.DialContext(ctx2, "tcp", address)
 	if err != nil {
 		logf("warn", "Quick connection test failed for %s: %v", address, err)
 		return
@@ -587,11 +642,13 @@ func getServerIP() string {
 		"https://ipinfo.io/ip",
 		"https://api.ipify.org",
 		"https://ifconfig.me",
-
 	}
 	
 	client := &http.Client{
 		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			DialContext: customDialer.DialContext,
+		},
 	}
 	
 	for _, service := range services {
@@ -610,13 +667,15 @@ func getServerIP() string {
 		ip := strings.TrimSpace(string(body))
 		
 		if net.ParseIP(ip) != nil {
-			logf("debug", "Got IP from %s: %s", service, ip)
+			logf("debug", "Got IP from %s: %s (using Cloudflare DNS)", service, ip)
 			return ip
 		}
 	}
 	
-	// if all services fail, try to get local IP
-	conn, err := net.Dial("udp", "8.8.8.8:80")
+	// if all services fail, try to get local IP using custom dialer
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	conn, err := customDialer.DialContext(ctx, "udp", "8.8.8.8:80")
 	if err == nil {
 		defer conn.Close()
 		localAddr := conn.LocalAddr().(*net.UDPAddr)
@@ -867,9 +926,9 @@ func main() {
 	server := &http.Server{
 		Addr:         ":" + config.Port,
 		Handler:      http.HandlerFunc(handleRequest),
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		ReadTimeout:  120 * time.Second,
+		WriteTimeout: 120 * time.Second, 
+		IdleTimeout:  300 * time.Second, 
 	}
 	
 	fmt.Printf("Server is running on port %s\n", config.Port)

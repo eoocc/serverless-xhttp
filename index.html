@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>守护地球 · 人人有责</title>
+  <meta name="description" content="传递绿色低碳理念，呼吁每个人从小事做起，一起守护地球。"/>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{
+      --bg: #0a0f14;
+      --fg: #e7f1ee;
+      --muted: #9fb3ad;
+      --accent: #4ade80; /* 绿 */
+      --accent-2: #22d3ee; /* 湖蓝 */
+      --card: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.15);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg: #f6fbf8;
+        --fg: #3a70fa;
+        --muted: #4a675e;
+        --card: rgba(255,255,255,.9);
+        --stroke: rgba(8,51,37,.08);
+        --shadow: 0 12px 28px rgba(0,0,0,.08);
+      }
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color:var(--fg);
+      background:
+        radial-gradient(1200px 600px at 80% -10%, rgba(34,211,238,.18), transparent 60%),
+        radial-gradient(1000px 500px at -10% 30%, rgba(74,222,128,.18), transparent 60%),
+        linear-gradient(180deg, #06100d 0%, var(--bg) 40% 100%);
+      overflow-x:hidden;
+    }
+
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+
+    .container{width:min(1120px, 92vw); margin:0 auto}
+
+    /* 顶部导航 */
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background: linear-gradient(to bottom, rgba(0,0,0,.35), transparent);
+      border-bottom: 1px solid var(--stroke);
+    }
+    .nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.3px}
+    .logo{
+      width:36px;height:36px;border-radius:12px;
+      background:conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent));
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,.25), var(--shadow);
+    }
+    .navlinks{display:flex;gap:18px;align-items:center}
+    .navlinks a{opacity:.9;padding:8px 10px;border-radius:10px}
+    .navlinks a:hover{background:var(--card)}
+
+    .btn{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:10px 16px;border-radius:12px;border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      transition:.25s ease;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn:hover{transform:translateY(-2px);}
+    .btn.primary{border-color: transparent; background: linear-gradient(90deg, var(--accent), var(--accent-2)); color:#06100d}
+
+    /* 首屏 */
+    .hero{position:relative;padding:80px 0 56px;}
+    .hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:28px;align-items:center}
+    .eyebrow{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;border:1px dashed var(--stroke);opacity:.9;background:rgba(255,255,255,.04)}
+    .title{font-size:clamp(28px, 6vw, 56px);line-height:1.08;margin:14px 0 10px;font-weight:800;letter-spacing:.2px}
+    .lead{font-size:clamp(15px, 2.5vw, 18px);opacity:.9}
+    .hero-cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
+
+    .earth-card{
+      position:relative;aspect-ratio:1/1;border-radius:24px;border:1px solid var(--stroke);
+      background: radial-gradient(80% 80% at 60% 30%, rgba(34,211,238,.22), transparent),
+                  radial-gradient(110% 80% at 40% 120%, rgba(74,222,128,.18), transparent),
+                  var(--card);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .earth{position:absolute;inset:0;display:grid;place-items:center}
+    .earth svg{width:76%;filter:drop-shadow(0 20px 40px rgba(0,0,0,.35))}
+    .sparkle{position:absolute;inset:auto;top:14%;left:10%;width:12px;height:12px;border-radius:50%;background:linear-gradient(90deg, #fff, rgba(255,255,255,.4));box-shadow:0 0 18px #fff,0 0 40px #6ee7b7,0 0 60px #22d3ee;animation:twinkle 2.2s ease-in-out infinite}
+    .sparkle.s2{top:auto;bottom:18%;left:auto;right:18%;animation-delay:.8s}
+    @keyframes twinkle{0%,100%{opacity:.3;transform:scale(.6)}50%{opacity:1;transform:scale(1)}}
+
+    /* 特色 */
+    .section{padding:64px 0}
+    .section-title{font-weight:800;font-size:clamp(22px,3.6vw,32px);margin:0 0 14px}
+    .section-sub{opacity:.85;margin-bottom:24px}
+
+    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{border:1px solid var(--stroke);border-radius:var(--radius);background:var(--card);padding:20px;box-shadow:var(--shadow);transition:.25s}
+    .card:hover{transform:translateY(-4px)}
+    .card h3{margin:.2rem 0 .6rem;font-size:18px}
+    .icon{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02));border:1px solid var(--stroke)}
+
+    /* 数据 */
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:10px}
+    .stat{border:1px dashed var(--stroke);border-radius:16px;padding:18px 16px;background:rgba(255,255,255,.04)}
+    .stat .num{font-weight:800;font-size:28px}
+    .stat .desc{opacity:.8;margin-top:6px}
+
+    /* 时间线 */
+    .timeline{position:relative;margin-top:8px}
+    .timeline::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--accent),transparent)}
+    .tl-item{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:14px 0}
+    .dot{width:24px;height:24px;border-radius:999px;background:linear-gradient(180deg,var(--accent),var(--accent-2));box-shadow:0 0 0 4px rgba(34,211,238,.12)}
+    .tl-card{border:1px solid var(--stroke);border-radius:14px;background:var(--card);padding:14px}
+
+    /* 小贴士 */
+    .tips{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+    .tip{display:flex;gap:12px;align-items:flex-start;padding:14px;border-radius:14px;border:1px solid var(--stroke);background:rgba(255,255,255,.06)}
+    .tip b{display:block;margin-bottom:4px}
+
+    /* 图库 */
+    .gallery{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
+    .gallery .g{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--stroke);aspect-ratio:16/10;background:linear-gradient(120deg, rgba(34,211,238,.22), rgba(74,222,128,.22))}
+    .gallery .g::after{content:"Green";position:absolute;bottom:8px;right:10px;font-size:12px;opacity:.75}
+
+    /* 页脚 */
+    footer{padding:40px 0 60px;opacity:.9}
+    .foot{display:flex;gap:16px;justify-content:space-between;align-items:center;flex-wrap:wrap;border-top:1px solid var(--stroke);padding-top:18px}
+
+    /* 响应式 */
+    @media (max-width: 980px){
+      .hero-grid{grid-template-columns:1fr}
+      .features{grid-template-columns:1fr 1fr}
+      .stats{grid-template-columns:1fr 1fr}
+      .gallery{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width: 640px){
+      .navlinks{display:none}
+      .features{grid-template-columns:1fr}
+      .tips{grid-template-columns:1fr}
+      .gallery{grid-template-columns:1fr}
+    }
+
+    /* 入场动画 */
+    [data-reveal]{opacity:0; transform: translateY(10px); transition: .6s ease}
+    [data-reveal].reveal{opacity:1; transform:none}
+  </style>
+</head>
+<body>
+  <!-- 顶部导航 -->
+  <header>
+    <div class="container nav">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <span>守护地球</span>
+      </div>
+      <nav class="navlinks">
+        <a href="#about">愿景</a>
+        <a href="#features">行动</a>
+        <a href="#data">数据</a>
+        <a href="#join" class="btn">加入我们</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 首屏 -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="eyebrow" data-reveal>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span>低碳 · 绿色 · 共生</span>
+        </div>
+        <h1 class="title" data-reveal>每一份微小的改变，都在为地球续一秒</h1>
+        <p class="lead" data-reveal>节能减排、绿色出行、垃圾分类、节约用水……从今天开始，为蓝色星球做一件小事。</p>
+        <div class="hero-cta" data-reveal>
+          <a class="btn primary" href="#join">立即行动</a>
+          <a class="btn" href="#features">了解更多</a>
+        </div>
+      </div>
+
+      <div class="earth-card" aria-hidden="true" data-reveal>
+        <div class="earth">
+          <!-- 简约地球矢量 -->
+          <svg viewBox="0 0 400 400" role="img" aria-label="地球插画">
+            <defs>
+              <radialGradient id="glow" cx="50%" cy="40%" r="60%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.8"/>
+                <stop offset="60%" stop-color="#a7f3d0" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#67e8f9" stop-opacity="0.12"/>
+              </radialGradient>
+            </defs>
+            <circle cx="200" cy="200" r="130" fill="url(#glow)" />
+            <circle cx="200" cy="200" r="128" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2"/>
+            <!-- 经线纬线 -->
+            <g stroke="rgba(255,255,255,.45)" stroke-width="1.2" fill="none">
+              <circle cx="200" cy="200" r="100"/>
+              <ellipse cx="200" cy="200" rx="120" ry="58"/>
+              <ellipse cx="200" cy="200" rx="60" ry="118"/>
+              <path d="M72 200h256M200 72v256"/>
+            </g>
+            <!-- 大洲块 -->
+            <g fill="#34d399" fill-opacity=".85">
+              <path d="M150 145c22-16 48-22 75-15 18 5 22 20 10 30-13 11-26 15-40 16-18 1-32-7-45-31z"/>
+              <path d="M105 205c8-14 24-18 40-10 12 6 16 20 8 30-10 12-26 16-40 12-10-3-12-18-8-32z"/>
+              <path d="M240 250c18-8 38-6 54 6 10 8 8 20-4 26-20 10-44 10-60-6-8-8-2-24 10-26z"/>
+            </g>
+          </svg>
+        </div>
+        <div class="sparkle"></div>
+        <div class="sparkle s2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 愿景与特色 -->
+  <section id="about" class="section">
+    <div class="container">
+      <h2 class="section-title" data-reveal>我们的愿景</h2>
+      <p class="section-sub" data-reveal>以科技与行动，推动人与自然的和谐共生，建设资源节约型社会，让绿色成为最明亮的底色。</p>
+
+      <div id="features" class="features">
+        <article class="card" data-reveal>
+          <div class="icon" aria-hidden="true">🌱</div>
+          <h3>绿色出行</h3>
+          <p>优先步行、骑行与公共交通，减少一次性短途驾车与空驶里程，累计每年可减少大量碳排。</p>
+        </article>
+        <article class="card" data-reveal>
+          <div class="icon" aria-hidden="true">💧</div>
+          <h3>节约用水</h3>
+          <p>及时关闭水龙头，回收利用中水，选择高效节水设备，让每一滴都物尽其用。</p>
+        </article>
+        <article class="card" data-reveal>
+          <div class="icon" aria-hidden="true">♻️</div>
+          <h3>垃圾分类</h3>
+          <p>源头减量、按类投放，推动再生资源循环使用，从身边的小动作开始改变城市。</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 数据板 -->
+  <section id="data" class="section">
+    <div class="container">
+      <h2 class="section-title" data-reveal>可持续数据一瞥</h2>
+      <p class="section-sub" data-reveal>这些数字展示了行动的力量。它们也在提醒我们：还可以更好。</p>
+      <div class="stats">
+        <div class="stat" data-reveal>
+          <div class="num">85%</div>
+          <div class="desc">社区居民愿意为垃圾分类投入更多时间</div>
+        </div>
+        <div class="stat" data-reveal>
+          <div class="num">30万吨</div>
+          <div class="desc">年均减少一次性塑料制品使用</div>
+        </div>
+        <div class="stat" data-reveal>
+          <div class="num">-18%</div>
+          <div class="desc">试点区域公共建筑能耗下降</div>
+        </div>
+        <div class="stat" data-reveal>
+          <div class="num">120+</div>
+          <div class="desc">绿色校园与低碳社区实践案例</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 时间线 -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title" data-reveal>一步一个脚印</h2>
+      <div class="timeline">
+        <div class="tl-item" data-reveal>
+          <div class="dot" aria-hidden="true"></div>
+          <div class="tl-card">
+            <b>2023 · 发起计划</b>
+            <p>联动社区、学校与企业，共同搭建绿色行动网络，明确减排与资源回收目标。</p>
+          </div>
+        </div>
+        <div class="tl-item" data-reveal>
+          <div class="dot" aria-hidden="true"></div>
+          <div class="tl-card">
+            <b>2024 · 扩大试点</b>
+            <p>在更多城市落地垃圾分类与节能改造，形成可复制的标准与工具包。</p>
+          </div>
+        </div>
+        <div class="tl-item" data-reveal>
+          <div class="dot" aria-hidden="true"></div>
+          <div class="tl-card">
+            <b>2025 · 共创生态</b>
+            <p>开放数据与平台，鼓励公众与开发者参与监测与创新，推动社会协作。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 绿色生活小贴士 -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title" data-reveal>今天就能做的 6 件小事</h2>
+      <div class="tips">
+        <div class="tip" data-reveal><span>🚲</span><div><b>近距离出行，优先骑行</b>减少短途开车与叫车，既健康也低碳。</div></div>
+        <div class="tip" data-reveal><span>🛍️</span><div><b>自带购物袋与水杯</b>减少一次性塑料制品使用。</div></div>
+        <div class="tip" data-reveal><span>🔌</span><div><b>随手关电，拔掉闲置充电器</b>用电器待机也耗电。</div></div>
+        <div class="tip" data-reveal><span>🥗</span><div><b>多菜少肉，拒绝浪费</b>合理膳食也能降低碳足迹。</div></div>
+        <div class="tip" data-reveal><span>🚿</span><div><b>缩短淋浴时长</b>选择节水型花洒。</div></div>
+        <div class="tip" data-reveal><span>📦</span><div><b>纸箱二次利用</b>包装减量从我做起。</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 图库（占位渐变块，可替换为图片） -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title" data-reveal>自然的色盘</h2>
+      <p class="section-sub" data-reveal>将下方色块替换为你自己的活动或自然图片，它们将自动适配布局。</p>
+      <div class="gallery">
+        <div class="g" data-reveal></div>
+        <div class="g" data-reveal></div>
+        <div class="g" data-reveal></div>
+        <div class="g" data-reveal></div>
+        <div class="g" data-reveal></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 呼吁加入 -->
+  <section id="join" class="section">
+    <div class="container">
+      <div class="card" data-reveal style="display:grid;grid-template-columns:1.4fr .6fr;gap:18px;align-items:center">
+        <div>
+          <h2 class="section-title">加入绿色行动者</h2>
+          <p class="section-sub">订阅我们的月报、参与社区志愿活动，或将你的绿色项目分享到平台。</p>
+          <form id="subscribe" onsubmit="event.preventDefault(); handleSub();" style="display:flex;gap:10px;flex-wrap:wrap">
+            <input id="email" type="email" required placeholder="输入邮箱地址" aria-label="邮箱" style="flex:1;min-width:230px;padding:12px 14px;border-radius:12px;border:1px solid var(--stroke);background:rgba(255,255,255,.8)"/>
+            <button class="btn primary" type="submit">订阅</button>
+          </form>
+          <div id="sub-msg" role="status" style="margin-top:10px;opacity:.9"></div>
+        </div>
+        <div style="justify-self:end">
+          <a class="btn" href="#top" aria-label="返回顶部">返回顶部 ↑</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container foot">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <span>Green Planet</span>
+      </div>
+      <small>© <span id="year"></span> 一起守护地球 · 让绿色成为习惯</small>
+    </div>
+  </footer>
+
+  <script>
+    // 年份 & 订阅提示
+    document.getElementById('year').textContent = new Date().getFullYear();
+    function handleSub(){
+      const el = document.getElementById('email');
+      const msg = document.getElementById('sub-msg');
+      msg.textContent = '感谢订阅！我们会不定期发送绿色生活指南到：' + el.value;
+      el.value = '';
+    }
+
+    // 简单的入场动画（可视区域）
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if(e.isIntersecting){
+          e.target.classList.add('reveal');
+          observer.unobserve(e.target);
+        }
+      });
+    }, {threshold: .12});
+    document.querySelectorAll('[data-reveal]').forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

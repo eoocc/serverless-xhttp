@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -8,21 +8,23 @@ COPY go.mod go.sum ./
 
 RUN go mod download
 
-COPY main.go .
+COPY main.go index.html .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gohtpp main.go
 
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates curl bash \
     && rm -rf /var/cache/apk/*
 
-WORKDIR /root/
+WORKDIR /tmp/
 
-COPY --from=builder /app/app .
+COPY --from=builder /app/gohttp .
 
-RUN chmod +x app
+COPY index.html .
 
-EXPOSE 3000
+RUN chmod +x gohttp
 
-CMD ["./app"]
+EXPOSE 7860
+
+CMD ["./gohttp"]
